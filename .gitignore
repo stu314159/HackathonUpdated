@@ -7,3 +7,5 @@ WMBrick3D
 *~
 *.b_dat
 *.vtk
+*.out
+*.lbm
