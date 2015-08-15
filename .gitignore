@@ -1,0 +1,9 @@
+*.lst
+*.o
+*.cub
+*.ptx
+WMBrick3D
+*.*~
+*~
+*.b_dat
+*.vtk
