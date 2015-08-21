@@ -611,14 +611,6 @@ void OpenChannel3D::take_lbm_timestep(bool isEven, MPI_Comm comm){
     
     // collect data from upper HALO slice; z = totalSlices-1
     stream_out_collect(isEven,totalSlices-HALO,ghost_out_p,numPspeeds,Pspeeds,1);
-    #pragma acc wait(0,1)
- // begin communication to ghost_p_in
-    MPI_Isend(ghost_out_m,numHALO,MPI_FLOAT,nd_m,tag_d,comm, &rq_out1);
-    MPI_Irecv(ghost_in_p,numHALO,MPI_FLOAT,nd_p,tag_d,comm,&rq_in1);
-    // begin communication to ghost_m_in
-    MPI_Isend(ghost_out_p,numHALO,MPI_FLOAT,nd_p,tag_u,comm,&rq_out2);
-    MPI_Irecv(ghost_in_m,numHALO,MPI_FLOAT,nd_m,tag_u,comm,&rq_in2);
-    // ---  Sequential Dependency B -----
     
     // --- Start Sequential Dependency C -----
     int streamNum;
@@ -627,9 +619,19 @@ void OpenChannel3D::take_lbm_timestep(bool isEven, MPI_Comm comm){
     }else{
        streamNum = 3;
     }
-
+#pragma acc wait(0,1)
     // collide and stream interior lattice points
     D3Q15_process_slices(isEven,HALO+1,totalSlices-2*HALO,streamNum,waitNum);
+
+
+ // begin communication to ghost_p_in
+    MPI_Isend(ghost_out_m,numHALO,MPI_FLOAT,nd_m,tag_d,comm, &rq_out1);
+    MPI_Irecv(ghost_in_p,numHALO,MPI_FLOAT,nd_p,tag_d,comm,&rq_in1);
+    // begin communication to ghost_m_in
+    MPI_Isend(ghost_out_p,numHALO,MPI_FLOAT,nd_p,tag_u,comm,&rq_out2);
+    MPI_Irecv(ghost_in_m,numHALO,MPI_FLOAT,nd_m,tag_u,comm,&rq_in2);
+    // ---  Sequential Dependency B -----
+    
     // --- End Sequential Dependency C -----
     // ensure communication of boundary lattice points is complete
     nvtxRangePush("MPI_WAIT");
