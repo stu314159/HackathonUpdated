@@ -644,6 +644,7 @@ void OpenChannel3D::take_lbm_timestep(bool isEven, MPI_Comm comm){
     // Sequential Dependency B
     // copy data from i-1 partition into lower boundary slice
     stream_in_distribute(isEven,HALO,ghost_in_m,numPspeeds,Pspeeds,1);
+   #pragma acc wait(waitNum)
 }
 
 void OpenChannel3D::initialize_mpi_buffers(){
