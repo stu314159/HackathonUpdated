@@ -538,20 +538,21 @@ void OpenChannel3D::stream_out_collect(bool isEven,const int z_start,float * RES
     
     dummyUse(nnodes,numSpd);
     
-    #pragma acc parallel loop async(streamNum) collapse(3) gang vector(128) \
+    #pragma acc parallel loop async(streamNum) collapse(4) gang vector(128) \
         present(streamSpeeds[0:numStreamSpeeds]) \
         present(fIn_b[0:nnodes*numSpd]) \
         copyout(buff_out[0:Nx*Ny*numStreamSpeeds*HALO])
-    for(int z=0;z<HALO;z++){
+    for(int spd=0;spd<numStreamSpeeds;spd++){
+      for(int z=0;z<HALO;z++){
         for(int y=0;y<Ny;y++){
-            for(int x=0;x<Nx;x++){
-                for(int spd=0;spd<numStreamSpeeds;spd++){
-                    int tid_l = x+y*Nx+z*Nx*Ny; int tid_g = x+y*Nx+(z+z_start)*Nx*Ny;
-                    int stream_spd=streamSpeeds[spd];
-                    buff_out[tid_l*numStreamSpeeds+spd]=fIn_b[getIdx(nnodes, numSpd, tid_g,stream_spd)];
-                }
-            }
+          for(int x=0;x<Nx;x++){
+            //    for(int spd=0;spd<numStreamSpeeds;spd++){
+            int tid_l = x+y*Nx+z*Nx*Ny; int tid_g = x+y*Nx+(z+z_start)*Nx*Ny;
+            int stream_spd=streamSpeeds[spd];
+            buff_out[tid_l*numStreamSpeeds+spd]=fIn_b[getIdx(nnodes, numSpd, tid_g,stream_spd)];
+          }
         }
+      }
     }
 }
 
@@ -570,21 +571,22 @@ void OpenChannel3D::stream_in_distribute(bool isEven,const int z_start, const fl
     }
     
     dummyUse(nnodes,numSpd);
-    #pragma acc parallel loop async(streamNum) collapse(3) gang vector(128) \
+    #pragma acc parallel loop async(streamNum) collapse(4) gang vector(128) \
         present(streamSpeeds[0:numStreamSpeeds]) \
         present(fOut_b[0:nnodes*numSpd]) \
         copyin(buff_in[0:Nx*Ny*numStreamSpeeds*HALO])
-    for(int z=0;z<HALO;z++){
+    for(int spd=0;spd<numStreamSpeeds;spd++){
+      for(int z=0;z<HALO;z++){
         for(int y=0;y<Ny;y++){
             for(int x=0;x<Nx;x++){
-                for(int spd=0;spd<numStreamSpeeds;spd++){
-                    int tid_l=x+y*Nx+z*Nx*Ny; int tid_g = x+y*Nx+(z+z_start)*Nx*Ny;
-                    int stream_spd=streamSpeeds[spd];
-                    fOut_b[getIdx(nnodes, numSpd, tid_g,stream_spd)]=buff_in[tid_l*numStreamSpeeds+spd];
-                }
+                //for(int spd=0;spd<numStreamSpeeds;spd++){
+               int tid_l=x+y*Nx+z*Nx*Ny; int tid_g = x+y*Nx+(z+z_start)*Nx*Ny;
+               int stream_spd=streamSpeeds[spd];
+               fOut_b[getIdx(nnodes, numSpd, tid_g,stream_spd)]=buff_in[tid_l*numStreamSpeeds+spd];
             }
         }
-    }
+     }
+   }
 }
 
 void OpenChannel3D::take_lbm_timestep(bool isEven, MPI_Comm comm){
